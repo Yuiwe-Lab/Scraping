@@ -44,50 +44,58 @@ login.click()
 
 print('logged in')
 
-hashtag_input=['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
+#this seems unnecessary for now
+#hashtag_input=['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 soup = []
 
-for i in range(0,len(hashtag_input)):
+#{hashtag_input[i]}
 
-    search_url=(f'https://www.linkedin.com/search/results/content/?keywords=%23{hashtag_input[i]}&origin=SWITCH_SEARCH_VERTICAL')
-    
+#for i in range(0,len(hashtag_input)):
+
+# searching using '#' as input
+
+search_url=(f'https://www.linkedin.com/search/results/content/?keywords=%23&origin=SWITCH_SEARCH_VERTICAL') #Jumps straight to the conent section
+
+time.sleep(pause_time)
+
+driver.get(search_url)
+
+start=time.time()
+
+elapsed=0
+
+last_height = driver.execute_script("return document.body.scrollHeight")
+
+count = 0
+
+while elapsed < 180:
+    # Scroll down to bottom
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+    # wait to load page
     time.sleep(pause_time)
 
-    driver.get(search_url)
+    # Calculate new scroll height and compare with last scroll height
+    new_height = driver.execute_script("return document.body.scrollHeight")
+    if new_height == last_height: # which means end of page
+        break
+    # update the last height
+    last_height = new_height
 
-    start=time.time()
+    count+=1
 
-    elapsed=0
+    elapsed=time.time()-start
 
-    last_height = driver.execute_script("return document.body.scrollHeight")
+    print(f'...',end='')
 
-    count = 0
+required_html=driver.page_source
 
-    while elapsed < 180:
-        # Scroll down to bottom
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+#used when soup was a list
+#soup.append(BeautifulSoup(required_html,'lxml'))
 
-        # wait to load page
-        time.sleep(pause_time)
+soup=BeautifulSoup(required_html,'lxml')
 
-        # Calculate new scroll height and compare with last scroll height
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height: # which means end of page
-            break
-        # update the last height
-        last_height = new_height
-
-        count+=1
-
-        elapsed=time.time()-start
-
-        print(f'...',end='')
-
-    required_html=driver.page_source
-
-    soup.append(BeautifulSoup(required_html,'lxml'))
-
-    print(f'Soup {hashtag_input[i]} is ready')
+#print(f'Soup {hashtag_input[i]} is ready')
     
 print('Done!')  
 
