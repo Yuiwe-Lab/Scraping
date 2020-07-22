@@ -13,7 +13,7 @@ pause_time=5
 options=Options()
 options.headless=False # Headless browser. Set False to open browser window
 
-driver = webdriver.Firefox(options=options,executable_path=" ") #ENTER PATH TO GECKODRIVER
+driver = webdriver.Firefox(options=options,executable_path="") #ENTER PATH TO GECKODRIVER
 
 print("Headless Browser Initialized")
 
@@ -68,7 +68,7 @@ last_height = driver.execute_script("return document.body.scrollHeight")
 
 count = 0
 
-while elapsed < 180:
+while elapsed < 30:
     # Scroll down to bottom
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
@@ -105,17 +105,22 @@ driver.quit()
 links=[]
 hashtags=[]
 all_links=[]
-for i in range(len(soup)):
-    all_links.append(soup[i].select('a'))
+#for i in range(len(soup)):
+#all_links.append(soup[i].select('a'))
 
-parse_links=[]
+all_links=soup.select('a')
+
+
+#parse_links=[]
+
+#for link in all_links:
+    #for i in range(len(link)):
+        #parse_links.append(link[i])
+
+
+#for link in parse_links:
 
 for link in all_links:
-    for i in range(len(link)):
-        parse_links.append(link[i])
-
-
-for link in parse_links:
     
     if '#' in link.text and '\n' not in link.text and link.text not in hashtags: # search for '#' in all links and append to list
         hashtags.append(link.text)
@@ -125,10 +130,10 @@ ation_words=[]
 ship_words = []
 for tag in hashtags:
     if 'ation' in tag[-5:]:
-        tag.append(ation_words)
+        ation_words.append(tag)
 
     if 'ship' in tag[-4:]:
-        tag.append(ship_words)
+        ship_words.append(tag)
 
         
 print('links are ready')
