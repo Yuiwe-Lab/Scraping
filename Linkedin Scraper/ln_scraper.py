@@ -112,6 +112,17 @@ for link in parse_links:
     if '#' in link.text and '\n' not in link.text and link.text not in hashtags: # search for '#' in all links and append to list
         hashtags.append(link.text)
 
+# filter hashtags with 'ation' or 'ship' at the end
+ation_words=[]
+ship_words = []
+for tag in hashtags:
+    if 'ation' in tag[-5:]:
+        tag.append(ation_words)
+
+    if 'ship' in tag[-4:]:
+        tag.append(ship_words)
+
+        
 print('links are ready')
 
 hashtags.sort()
