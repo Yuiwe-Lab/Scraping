@@ -70,11 +70,11 @@ def sift_summ(summary,link,list):						#sifting parameters
 			if word not in ship_words and word not in ship_except:
 				ship_words.append(word)
 				counter += 1
-		elif word[-5:] == 'ation':
+		if word[-5:] == 'ation':
 			if word not in ation_words and word not in ation_except:
 				ation_words.append(word)
 				counter += 1
-		elif "-" in word:
+		if "-" in word:
 			if word not in hyphen_words and word not in hyphen_except:
 				hyphen_words.append(word)
 				counter += 1
@@ -152,9 +152,8 @@ with db_connect('wordsort.db') as conn:									#Database Connection creates/che
 			cur = conn.cursor()
 			cur.execute("SELECT linkurl FROM links WHERE linkurl=?",(entry[0],))	#check if link is in database
 			result = cur.fetchall()													
-			if len(result) == 0:
-				lnk_id = None
-			#if no rows selected, its not in there
+			if len(result) == 0:							#if no rows selected, its not in there
+				lnk_id = None															
 				cur = conn.cursor()
 				print(entry)
 				cur.execute("INSERT INTO links (linkurl) VALUES (?)",(entry[0],))	#put the link in the database
