@@ -6,6 +6,8 @@ from sqlite3 import Error
 import feedparser
 
 
+
+
 def create_master(feed_link):
 	'''
 	Returns list of tuples [(link),(ship_words),(ation_words),(hyphen_words)]
@@ -103,6 +105,43 @@ def db_connect(db_file):
 	except Error as e:
 		print(e)
 	return conn
+
+def enter_words(table, w,lnk_id):
+	if word_in_table(table,w) is True:
+		duplicate_add(table,w)
+	else:
+		cur = conn.cursor()
+		cur.execute(f"INSERT INTO {table}(word,link_id) VALUES (?,?)",(w,lnk_id))
+		conn.commit()
+	
+def duplicate_add(table,wrd):
+	duptb = "dup_" + table
+	if word_in_table(duptb,wrd) is True:
+		cur = conn.cursor()
+		cur.execute(f"SELECT num FROM {duptb} WHERE word = ?",(wrd,))
+		rows = cur.fetchall()
+		if len(rows) == 1:
+			t = rows[0]
+			ut = t[0] + 1
+			cur = conn.cursor()
+			cur.execute(f"UPDATE {duptb} SET num = ? WHERE word = ?",(ut,wrd))
+			conn.commit()
+		
+	else:
+		cur = conn.cursor()
+		cur.execute(f"INSERT INTO {duptb}(word,num) VALUES  (?,?)",(wrd,2))
+		conn.commit()
+		
+		
+def word_in_table(tb,drw):
+	rows =[]
+	cur = conn.cursor()
+	cur.execute(f"SELECT (id) FROM {tb} WHERE word = ?",(drw,))
+	rows = cur.fetchall()
+	if len(rows) >= 1:
+		return True
+	else:
+		return False
 	
 def make_tables(conn,*tables):
 	if conn is not None:
@@ -120,7 +159,7 @@ links_table_tb = '''CREATE TABLE IF NOT EXISTS links (
 								); '''
 ship_words_tb = '''CREATE TABLE IF NOT EXISTS ship_words (
 								id integer PRIMARY KEY,
-								ship_word text NOT NULL,
+								word text NOT NULL,
 								link_id INTEGER,
 								CONSTRAINT fk_links
 								FOREIGN KEY (link_id)
@@ -129,7 +168,7 @@ ship_words_tb = '''CREATE TABLE IF NOT EXISTS ship_words (
 								
 ation_words_tb = '''CREATE TABLE IF NOT EXISTS ation_words (
 								id integer PRIMARY KEY,
-								ation_word text NOT NULL,
+								word text NOT NULL,
 								link_id INTEGER,
 								CONSTRAINT fk_links
 								FOREIGN KEY (link_id)
@@ -138,7 +177,7 @@ ation_words_tb = '''CREATE TABLE IF NOT EXISTS ation_words (
 								
 hyphen_words_tb = '''CREATE TABLE IF NOT EXISTS hyphen_words (
 								id integer PRIMARY KEY,
-								hyphen_word text NOT NULL,
+								word text NOT NULL,
 								link_id INTEGER,
 								CONSTRAINT fk_links
 								FOREIGN KEY (link_id)
@@ -147,18 +186,38 @@ hyphen_words_tb = '''CREATE TABLE IF NOT EXISTS hyphen_words (
 								
 neering_words_tb = '''CREATE TABLE IF NOT EXISTS neering_words (
 								id integer PRIMARY KEY,
-								neering_word text NOT NULL,
+								word text NOT NULL,
 								link_id INTEGER,
 								CONSTRAINT fk_links
 								FOREIGN KEY (link_id)
 								REFERENCES links(link_id)
 								); '''
-		
+
+dupe_neering = '''CREATE TABLE IF NOT EXISTS dup_neering_words (
+								id integer PRIMARY KEY,
+								word text NOT NULL,
+								num INTEGER NOT NULL
+								); '''
+dupe_hyphen = '''CREATE TABLE IF NOT EXISTS dup_hyphen_words (
+								id integer PRIMARY KEY,
+								word text NOT NULL,
+								num INTEGER NOT NULL
+								); '''
+dupe_ation = '''CREATE TABLE IF NOT EXISTS dup_ation_words (
+								id integer PRIMARY KEY,
+								word text NOT NULL,
+								num INTEGER NOT NULL
+								); '''	
+dupe_ship =    '''CREATE TABLE IF NOT EXISTS dup_ship_words (
+								id integer PRIMARY KEY,
+								word text NOT NULL,
+								num INTEGER NOT NULL
+								); '''								
 
 
 
 with db_connect('wordsort.db') as conn:									#Database Connection creates/checks in CWD
-	make_tables(conn,links_table_tb,ship_words_tb,ation_words_tb,hyphen_words_tb,neering_words_tb)	#Creates tables for word management and foreign key
+	make_tables(conn,links_table_tb,ship_words_tb,ation_words_tb,hyphen_words_tb,neering_words_tb,dupe_ship,dupe_ation,dupe_hyphen,dupe_neering)	#Creates tables for word management and foreign key
 	for href in rss_urls:												#RSS Link loop start
 		feed_analysis = create_master(href)									#make list of tuples [link,ship_words,...]
 		for entry in feed_analysis:												#Entry loop start
@@ -176,23 +235,15 @@ with db_connect('wordsort.db') as conn:									#Database Connection creates/che
 				print (lnk_id)
 				if len(entry[1]) > 0:													#put words in respective tables
 					for word in entry[1]:
-						cur = conn.cursor()
-						cur.execute("INSERT INTO ship_words(ship_word,link_id) VALUES (?,?)",(word,lnk_id))
-						conn.commit()
+						enter_words("ship_words",word,lnk_id)								##Explicit
 				if len(entry[2]) > 0:		
 					for word in entry[2]:
-						cur = conn.cursor()
-						cur.execute("INSERT INTO ation_words(ation_word,link_id) VALUES (?,?)",(word,lnk_id))
-						conn.commit()
+						enter_words("ation_words",word,lnk_id)
 				if len(entry[3]) > 0: 		
 					for word in entry[3]:
-						cur = conn.cursor()
-						cur.execute("INSERT INTO hyphen_words(hyphen_word,link_id) VALUES (?,?)",(word,lnk_id))
-						conn.commit()
+						enter_words("hyphen_words",word,lnk_id)
 				if len(entry[4]) > 0:
 					for word in entry[4]:
-						cur = conn.cursor()
-						cur.execute("INSERT INTO neering_words(neering_word,link_id) VALUES (?,?)",(word,lnk_id))
-						conn.commit()
+						enter_words("neering_words",word,lnk_id)
 	print("I'm Done...")
 print("connection Closed")
