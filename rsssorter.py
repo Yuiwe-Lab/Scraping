@@ -114,11 +114,11 @@ def make_tables(conn,*tables):
 				print(e)
 
 #tables_in_db		
-links_table = '''CREATE TABLE IF NOT EXISTS links (
+links_table_tb = '''CREATE TABLE IF NOT EXISTS links (
 								link_id integer PRIMARY KEY,
 								linkurl text NOT NULL
 								); '''
-ship_words = '''CREATE TABLE IF NOT EXISTS ship_words (
+ship_words_tb = '''CREATE TABLE IF NOT EXISTS ship_words (
 								id integer PRIMARY KEY,
 								ship_word text NOT NULL,
 								link_id INTEGER,
@@ -127,7 +127,7 @@ ship_words = '''CREATE TABLE IF NOT EXISTS ship_words (
 								REFERENCES links(link_id)
 								); '''
 								
-ation_words = '''CREATE TABLE IF NOT EXISTS ation_words (
+ation_words_tb = '''CREATE TABLE IF NOT EXISTS ation_words (
 								id integer PRIMARY KEY,
 								ation_word text NOT NULL,
 								link_id INTEGER,
@@ -136,7 +136,7 @@ ation_words = '''CREATE TABLE IF NOT EXISTS ation_words (
 								REFERENCES links(link_id)
 								); '''
 								
-hyphen_words = '''CREATE TABLE IF NOT EXISTS hyphen_words (
+hyphen_words_tb = '''CREATE TABLE IF NOT EXISTS hyphen_words (
 								id integer PRIMARY KEY,
 								hyphen_word text NOT NULL,
 								link_id INTEGER,
@@ -145,7 +145,7 @@ hyphen_words = '''CREATE TABLE IF NOT EXISTS hyphen_words (
 								REFERENCES links(link_id)
 								); '''
 								
-neering_words = '''CREATE TABLE IF NOT EXISTS neering_words (
+neering_words_tb = '''CREATE TABLE IF NOT EXISTS neering_words (
 								id integer PRIMARY KEY,
 								neering_word text NOT NULL,
 								link_id INTEGER,
@@ -158,7 +158,7 @@ neering_words = '''CREATE TABLE IF NOT EXISTS neering_words (
 
 
 with db_connect('wordsort.db') as conn:									#Database Connection creates/checks in CWD
-	make_tables(conn,links_table,ship_words,ation_words,hyphen_words,neering_words)	#Creates tables for word management and foreign key
+	make_tables(conn,links_table_tb,ship_words_tb,ation_words_tb,hyphen_words_tb,neering_words_tb)	#Creates tables for word management and foreign key
 	for href in rss_urls:												#RSS Link loop start
 		feed_analysis = create_master(href)									#make list of tuples [link,ship_words,...]
 		for entry in feed_analysis:												#Entry loop start
