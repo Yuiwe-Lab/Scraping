@@ -1,3 +1,5 @@
+#! python3
+# ~mikey
 
 import sqlite3
 from sqlite3 import Error
@@ -6,66 +8,6 @@ from bs4 import BeautifulSoup
 import requests
 
 
-links_table_tb = '''CREATE TABLE IF NOT EXISTS links (
-								link_id integer PRIMARY KEY,
-								linkurl text NOT NULL
-								); '''
-ship_words_tb = '''CREATE TABLE IF NOT EXISTS ship_words (
-								id integer PRIMARY KEY,
-								word text NOT NULL,
-								link_id INTEGER,
-								CONSTRAINT fk_links
-								FOREIGN KEY (link_id)
-								REFERENCES links(link_id)
-								); '''
-								
-ation_words_tb = '''CREATE TABLE IF NOT EXISTS ation_words (
-								id integer PRIMARY KEY,
-								word text NOT NULL,
-								link_id INTEGER,
-								CONSTRAINT fk_links
-								FOREIGN KEY (link_id)
-								REFERENCES links(link_id)
-								); '''
-								
-hyphen_words_tb = '''CREATE TABLE IF NOT EXISTS hyphen_words (
-								id integer PRIMARY KEY,
-								word text NOT NULL,
-								link_id INTEGER,
-								CONSTRAINT fk_links
-								FOREIGN KEY (link_id)
-								REFERENCES links(link_id)
-								); '''
-								
-neering_words_tb = '''CREATE TABLE IF NOT EXISTS neering_words (
-								id integer PRIMARY KEY,
-								word text NOT NULL,
-								link_id INTEGER,
-								CONSTRAINT fk_links
-								FOREIGN KEY (link_id)
-								REFERENCES links(link_id)
-								); '''
-
-dupe_neering = '''CREATE TABLE IF NOT EXISTS dup_neering_words (
-								id integer PRIMARY KEY,
-								word text NOT NULL,
-								num INTEGER NOT NULL
-								); '''
-dupe_hyphen = '''CREATE TABLE IF NOT EXISTS dup_hyphen_words (
-								id integer PRIMARY KEY,
-								word text NOT NULL,
-								num INTEGER NOT NULL
-								); '''
-dupe_ation = '''CREATE TABLE IF NOT EXISTS dup_ation_words (
-								id integer PRIMARY KEY,
-								word text NOT NULL,
-								num INTEGER NOT NULL
-								); '''	
-dupe_ship =    '''CREATE TABLE IF NOT EXISTS dup_ship_words (
-								id integer PRIMARY KEY,
-								word text NOT NULL,
-								num INTEGER NOT NULL
-								); '''				
 class Source:
 	source_url = ''
 	src_master_list = []
@@ -90,6 +32,14 @@ class Source:
 			trim_link = entry[0]
 			summary = entry[1][entry[1].find(".entry-header")+80:entry[1].find("Looking for news you can trust?")]
 			self.sift(self.wordize(summary),trim_link)
+			
+	def scimag_source(self,url):
+		for entry in self.simple_fp(url):
+			trim_link = entry[0][:entry[0].find("?")]
+			summary = entry[1][3:-4]
+			self.sift(self.wordize(summary),trim_link)
+			
+			
 	
 #access definitions
 	def simple_fp(self,url,souped = False):
@@ -138,7 +88,7 @@ class Source:
 	def sift(self,list_trimmed_words,link):
 		ship_words = [];	ship_except = 	 []
 		ation_words = [];	ation_except =	 []
-		hyphen_words = [];	hyphen_except =  ["--","SARS-CoV-2","covid-19","-","---"]
+		hyphen_words = [];	hyphen_except =  ["--","sars-cov-2","covid-19","-","---"]
 		neering_words = [];	neering_except = []
 		counter = 0
 	
@@ -176,6 +126,8 @@ class Source:
 			self.slashdot_source(url)
 		elif 'motherjones' in url[:35]:
 			self.mojo_source(url)	
+		elif "sciencemag" in url[:30]:
+			self.scimag_source(url)
 		else:
 			print(f"No match for {url}")
 				
@@ -191,7 +143,7 @@ class Populate_Tables:
 	def __init__(self, db, rss_feeds):
 		self.database = db
 		self.conn = self.db_connect(self.database)
-		self.make_tables(self.conn,links_table_tb,ship_words_tb,ation_words_tb,hyphen_words_tb,neering_words_tb,dupe_ship,dupe_ation,dupe_hyphen,dupe_neering)
+		self.make_tables(self.conn,"ship_words","ation_words","hyphen_words","neering_words")
 		self.li = rss_feeds
 		for feed in self.li:
 			p = Source(feed).src_master_list
@@ -200,6 +152,7 @@ class Populate_Tables:
 		
 		for entry in self.master_list:
 			if self.link_in_db(entry[0]) is False:
+				print(entry)
 				#enter data	
 				cur = self.conn.cursor()
 				cur.execute("INSERT INTO links (linkurl) VALUES (?)",(entry[0],))
@@ -207,18 +160,19 @@ class Populate_Tables:
 				lnk_id = cur.lastrowid
 				if len(entry[1]) > 0:													#put words in respective tables
 					for word in entry[1]:
-						self.enter_word("ship_words",word,lnk_id)								##Explicit
+						self.enter_words("ship_words",word,lnk_id)								##Explicit
 				if len(entry[2]) > 0:		
 					for word in entry[2]:
-						self.enter_word("ation_words",word,lnk_id)
+						self.enter_words("ation_words",word,lnk_id)
 				if len(entry[3]) > 0: 		
 					for word in entry[3]:
-						self.enter_word("hyphen_words",word,lnk_id)
+						self.enter_words("hyphen_words",word,lnk_id)
 				if len(entry[4]) > 0:
 					for word in entry[4]:
-						self.enter_word("neering_words",word,lnk_id)
+						self.enter_words("neering_words",word,lnk_id)
 				
-			
+		if self.conn:
+			self.conn.close()
 	
 	def db_connect(self, db_file):
 		self.conn = None
@@ -229,7 +183,7 @@ class Populate_Tables:
 			print(e)
 		return conn
 
-	def enter_word(self,table, w,lnk_id):
+	def enter_words(self,table, w,lnk_id):
 		if self.word_in_table(table,w) is True:
 			self.duplicate_add(table,w)
 		else:
@@ -276,15 +230,45 @@ class Populate_Tables:
 		else:
 			return False
 	
+	def create_word_tables(self,conn,table_name):
+		if conn is not None:
+			try:
+				c = conn.cursor()
+				c.execute(f'''CREATE TABLE IF NOT EXISTS {table_name} (
+								id integer PRIMARY KEY,
+								word text NOT NULL,
+								link_id INTEGER,
+								CONSTRAINT fk_links
+								FOREIGN KEY (link_id)
+								REFERENCES links(link_id)
+								);''')
+				conn.commit()
+			except Error as e:
+				print(e)
+			try:
+				c = conn.cursor()
+				c.execute(f'''CREATE TABLE IF NOT EXISTS {'dup_'+table_name} (
+								id integer PRIMARY KEY,
+								word text NOT NULL,
+								num INTEGER NOT NULL
+								);''')
+				conn.commit()
+			except Error as e:
+				print(e)
+				
 	def make_tables(self,conn,*tables):
 		if conn is not None:
-			for i in tables:
-				try:
-					c = conn.cursor()
-					c.execute(i)
-				except Error as e:
-					print(e)
-
+			try:
+				c = conn.cursor()
+				c.execute('''CREATE TABLE IF NOT EXISTS links (
+								link_id integer PRIMARY KEY,
+								linkurl text NOT NULL
+								);''')
+			except Error as e:
+				print(e)
+		for name in tables:
+			self.create_word_tables(conn,name)
+			
 	
 
 	
