@@ -1,5 +1,3 @@
-#! python3
-# ~mikey
 
 import sqlite3
 from sqlite3 import Error
@@ -15,7 +13,26 @@ class Source:
 	def __init__(self,url):
 		self.source_url = url
 		self.sort_link(self.source_url)
-		
+	
+	def sort_link(self,url):
+		if 'popsci' in url[:35]:
+			self.popsci_source(url)
+		elif 'slashdot' in url[:35]:
+			self.slashdot_source(url)
+		elif 'motherjones' in url[:35]:
+			self.mojo_source(url)	
+		elif "sciencemag" in url[:30]:
+			self.scimag_source(url)
+		elif "uVCDwng32TgGk0nJ.xml" in url:
+			self.nyt_source(url)
+		elif "JyMVgKu36v8JT4H0.xml" in url:
+			self.nytbus_source(url)
+	#	elif "new_source_trigger" :								Source Trigger (add source #1/2)
+	#		self.new_source_definition(url)
+			
+		else:
+			print(f"No match for {url}")
+			
 #source Definitions yield portions of src_master_list	
 	def popsci_source(self,url):
 		for entry in self.simple_fp(url):
@@ -39,6 +56,43 @@ class Source:
 			summary = entry[1][3:-4]
 			self.sift(self.wordize(summary),trim_link)
 			
+	def nyt_source(self,url):
+		for e in self.simple_req(url,True):
+			trim_link = e[0][:-5]
+			if 'THIS IS A GENERATED TEMPLATE FILE. DO NOT EDIT.' in e[1]:
+				if e[1].rfind("THIS IS A GENERATED TEMPLATE FILE. DO NOT EDIT.") == e[1].find("THIS IS A GENERATED TEMPLATE FILE. DO NOT EDIT."):
+					summary = e[1][e[1].find("Continue reading the main story"):e[1].rfind("THIS IS A GENERATED TEMPLATE FILE. DO NOT EDIT.")]
+				else:
+					summary = e[1][e[1].find("Continue reading the main story"):e[1].rfind("THIS IS A GENERATED TEMPLATE FILE. DO NOT EDIT.")]
+					summary = summary[:summary.rfind("THIS IS A GENERATED TEMPLATE FILE. DO NOT EDIT.")]
+			else:
+				summary = summary[summary.find("Skip to content Skip to site index")+47:summary.rfind("Times Company NYTCo")-109]
+				
+			if '#masthead' in summary[:300]:
+				summary = summary[summary.rfind("Continue reading the main story"):]
+			self.sift(self.wordize(summary),trim_link)
+			
+	def nytbus_source(self,url):
+		for e in self.simple_req(url,True):
+			trim_link = e[0][:-5]
+			summary = e[1][e[1].find("|")+2:e[1].rfind("Advertisement")]
+			if "@media"in summary[:200]:
+				summary = summary[summary.find("Continue reading the main story"):]
+			if 'IS IS A GENERATED TEMPLATE FILE. DO NOT EDIT.' in summary:
+				summary = summary[summary.rfind("Continue reading the main story"):summary.find("IS IS A GENERATED TEMPLATE FILE. DO NOT EDIT.")] + summary[summary.rfind("|"):]
+			if "ai2html" in summary:
+				while "ai2html" in summary:
+					summary = summary[:summary.find("ai2html")-14] + summary[summary.find('End ai2html')+12:]
+					summary = summary[summary.find("|")+2:]
+					summary = summary[summary.find("|")+24:]
+			self.sift(self.wordize(summary),trim_link)
+			
+	
+#	def new_source_definition(self, url):									Source Definition (add SOurce 2/2)	
+#		for entry in feed: or wahtever
+#			define trim link
+#			define summary (a single string of words separated by spaces)
+#			self.sift(self.wordize(summary),trim_link)
 			
 	
 #access definitions
@@ -71,6 +125,7 @@ class Source:
 			if char in puncts:
 				ts = ts.replace(char,"")
 		li = list(ts.split(" "))
+		li = [i for i in li if len(i) < 37]
 		return li	
 
 	def soup_sandwich(self,text_with_html):
@@ -89,47 +144,34 @@ class Source:
 		ship_words = [];	ship_except = 	 []
 		ation_words = [];	ation_except =	 []
 		hyphen_words = [];	hyphen_except =  ["--","sars-cov-2","covid-19","-","---"]
-		neering_words = [];	neering_except = []
+		neering_words = [];	neering_except = []														#add term #1 
 		counter = 0
 	
 		for word in list_trimmed_words:
-			if len(word) < 35:
-				if word[-4:] == 'ship':
-					if word not in ship_words and word not in ship_except:
-						ship_words.append(word)
-						counter += 1
-				if word[-5:] == 'ation':
-					if word not in ation_words and word not in ation_except:
-						ation_words.append(word)
-						counter += 1
-				if "-" in word:
-					if word not in hyphen_words and word not in hyphen_except and word[:4] != "href":
-						hyphen_words.append(word)
-						counter += 1
-				if word[-7:] == 'neering':
-					if word not in neering_words and word not in neering_except:
-						neering_words.append(word)
-						counter += 1
-				else:
-					pass
+			if word[-4:] == 'ship':
+				if word not in ship_words and word not in ship_except:
+					ship_words.append(word)
+					counter += 1
+			if word[-5:] == 'ation':
+				if word not in ation_words and word not in ation_except:
+					ation_words.append(word)
+					counter += 1
+			if "-" in word:
+				if word not in hyphen_words and word not in hyphen_except and word[:4] != "href":
+					hyphen_words.append(word)
+					counter += 1
+			if word[-7:] == 'neering':
+				if word not in neering_words and word not in neering_except:
+					neering_words.append(word)
+					counter += 1
 
 		if counter > 0:
-			tuple = (link,ship_words,ation_words,hyphen_words,neering_words)
+			tuple = (link,ship_words,ation_words,hyphen_words,neering_words)						#add term #3
 			self.src_master_list.append(tuple) 
 		elif counter == 0:
 			pass
 			
-	def sort_link(self,url):
-		if 'popsci' in url[:35]:
-			self.popsci_source(url)
-		elif 'slashdot' in url[:35]:
-			self.slashdot_source(url)
-		elif 'motherjones' in url[:35]:
-			self.mojo_source(url)	
-		elif "sciencemag" in url[:30]:
-			self.scimag_source(url)
-		else:
-			print(f"No match for {url}")
+	
 				
 	
 		
@@ -143,7 +185,7 @@ class Populate_Tables:
 	def __init__(self, db, rss_feeds):
 		self.database = db
 		self.conn = self.db_connect(self.database)
-		self.make_tables(self.conn,"ship_words","ation_words","hyphen_words","neering_words")
+		self.make_tables(self.conn,"ship_words","ation_words","hyphen_words","neering_words")		#add term #4
 		self.li = rss_feeds
 		for feed in self.li:
 			p = Source(feed).src_master_list
@@ -152,7 +194,7 @@ class Populate_Tables:
 		
 		for entry in self.master_list:
 			if self.link_in_db(entry[0]) is False:
-				print(entry)
+				print(entry,"\n")
 				#enter data	
 				cur = self.conn.cursor()
 				cur.execute("INSERT INTO links (linkurl) VALUES (?)",(entry[0],))
@@ -170,7 +212,7 @@ class Populate_Tables:
 				if len(entry[4]) > 0:
 					for word in entry[4]:
 						self.enter_words("neering_words",word,lnk_id)
-				
+																									#add term #5
 		if self.conn:
 			self.conn.close()
 	
@@ -264,6 +306,7 @@ class Populate_Tables:
 								link_id integer PRIMARY KEY,
 								linkurl text NOT NULL
 								);''')
+				conn.commit()
 			except Error as e:
 				print(e)
 		for name in tables:
