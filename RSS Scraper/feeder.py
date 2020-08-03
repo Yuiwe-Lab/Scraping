@@ -14,8 +14,10 @@ import requests
 rss_urls = [r"http://rss.slashdot.org/Slashdot/slashdotMain",
 			r"https://www.popsci.com/arcio/rss/",
 			r"https://www.motherjones.com/feed/",
-			r"www.garfield.com"
+			r"http://science.sciencemag.org/rss/express.xml",
+			r"https://rss.app/feeds/JyMVgKu36v8JT4H0.xml", #ny times business
+			r"https://rss.app/feeds/uVCDwng32TgGk0nJ.xml"  # ny times world  best so far
 		  ]
 
-Populate_Tables('db_test_class.db',rss_urls)
+Populate_Tables('wordsort.db',rss_urls)
 
