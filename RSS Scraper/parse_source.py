@@ -1,3 +1,5 @@
+#! python3
+# ~mikey
 
 import sqlite3
 from sqlite3 import Error
@@ -66,7 +68,7 @@ class Source:
 					summary = e[1][e[1].find("Continue reading the main story"):e[1].rfind("THIS IS A GENERATED TEMPLATE FILE. DO NOT EDIT.")]
 					summary = summary[:summary.rfind("THIS IS A GENERATED TEMPLATE FILE. DO NOT EDIT.")]
 			else:
-				summary = summary[summary.find("Skip to content Skip to site index")+47:summary.rfind("Times Company NYTCo")-109]
+				summary = e[1][e[1].find("Skip to content Skip to site index")+47:e[1].rfind("Times Company NYTCo")-109]
 				
 			if '#masthead' in summary[:300]:
 				summary = summary[summary.rfind("Continue reading the main story"):]
@@ -119,7 +121,7 @@ class Source:
 #Filter Definitions
 
 	def wordize(self, ts):						
-		puncts = '''!()[]{};:"\,<>./?@#=$%^&*_~'''
+		puncts = '''!()[]{};:"\,<>./?@=$%^&*_~'''
 		ts = ts.lower()
 		for char in ts:					#remove punctuation
 			if char in puncts:
@@ -145,6 +147,7 @@ class Source:
 		ation_words = [];	ation_except =	 []
 		hyphen_words = [];	hyphen_except =  ["--","sars-cov-2","covid-19","-","---"]
 		neering_words = [];	neering_except = []														#add term #1 
+		hashtag_words = []; hashtag_except = []
 		counter = 0
 	
 		for word in list_trimmed_words:
@@ -164,9 +167,12 @@ class Source:
 				if word not in neering_words and word not in neering_except:
 					neering_words.append(word)
 					counter += 1
+			if word[:1] == "#":
+				if word not in hashtag_words and word not in hashtag_except:
+					hashtag_words.append(word)
 
 		if counter > 0:
-			tuple = (link,ship_words,ation_words,hyphen_words,neering_words)						#add term #3
+			tuple = (link,ship_words,ation_words,hyphen_words,neering_words,hashtag_words)						#add term #3
 			self.src_master_list.append(tuple) 
 		elif counter == 0:
 			pass
@@ -185,7 +191,7 @@ class Populate_Tables:
 	def __init__(self, db, rss_feeds):
 		self.database = db
 		self.conn = self.db_connect(self.database)
-		self.make_tables(self.conn,"ship_words","ation_words","hyphen_words","neering_words")		#add term #4
+		self.make_tables(self.conn,"ship_words","ation_words","hyphen_words","neering_words","hashtag_words")		#add term #4
 		self.li = rss_feeds
 		for feed in self.li:
 			p = Source(feed).src_master_list
@@ -212,7 +218,9 @@ class Populate_Tables:
 				if len(entry[4]) > 0:
 					for word in entry[4]:
 						self.enter_words("neering_words",word,lnk_id)
-																									#add term #5
+				if len(entry[5]) > 0:												#add term #5
+					for word in entry[5]:
+						self.enter_words("hashtag_words",word,lnk_id)
 		if self.conn:
 			self.conn.close()
 	
