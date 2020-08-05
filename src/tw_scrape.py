@@ -5,7 +5,7 @@ import pandas as pd
 #keyword = "#NFL"
 oldest_date = "2018-01-01"    
 newest_date = "2020-07-01"
-keywords = ["#entrepreneurship", "business", "#portmanteau", "#hyphen", "#Hemingway"]
+keywords = ["#entrepreneurship", "#business", "#portmanteau", "#hyphen", "#Hemingway"]
 number_tweets = 100         #per keyword
 
 #get old tweets
