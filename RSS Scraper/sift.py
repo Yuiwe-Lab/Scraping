@@ -84,7 +84,7 @@ class Sift:
 				self.sort_entries()
 			
 			elif "https://plato.stanford.edu/rss/sep.xml" in feed_url:
-				print("........Connecting to the The Stanford Philosophy Encyclopedia........")
+				print("........Connecting to The Stanford Philosophy Encyclopedia........")
 				for e,z in self.simple_req(feed_url,True):
 					if self.link_in_db(e) == False:
 						z = z[z.rfind("BEGIN ARTICLE HTML"):z.rfind("Bibliography")]
@@ -100,7 +100,35 @@ class Sift:
 						ar = self.wordize(ar)
 						self.exec_sift(e,ar)
 				self.sort_entries()
+			
+			elif 'popsci' in feed_url[:35]:
+				print("........Connecting to Popular Science........")
+				for e,z in self.simple_fp(feed_url):
+					if self.link_in_db(e) == False:
+						ar = self.wordize(z)
+						self.exec_sift(e,ar)
+				self.sort_entries()
+			
+			elif "https://www.ted.com" in feed_url[:20]:
+				print("........Connecting to TED.com for transcript........")
 				
+				if "/" in feed_url[-1:]:
+					feed_url = feed_url[:-1]
+				if self.link_in_db(feed_url) == False:	
+					trans_link = feed_url + "/transcript"
+					ar = requests.get(trans_link).text
+					if 'Transcript' in ar:
+						ar = self.soup_sandwich(ar)
+						ar = ar[ar.find("Transcript text")+16:ar.find("/Transcript text")]
+						ar = self.wordize(ar)
+						self.exec_sift(feed_url,ar)
+						self.sort_entries()
+					else:
+						print("TED talk has no transcript available")
+				else:
+					print("TED talk transcript already in database")
+					
+					
 			#elif...
 			else:
 				print(f"NO MATCH FOR {feed_url}","\n")
@@ -119,12 +147,13 @@ class Sift:
 		return li  													   #Return list of words meeting criteria
 		
 	def hyphen_words(self,article_words):
-		hyphen_except = ["-","--","---","covid-19","sars-cov-2","-*","*-"]
+		hyphen_except = ["-","--","---","covid-19","sars-cov-2"]
 		li =[]
 		for word in article_words:
 			if '-' in word:
 				if word.find('-') == word.rfind('-') and word not in hyphen_except and word not in li:
-					li.append(word)
+					if '-' not in word[:1] and '-' not in word[-1:]:
+						li.append(word)
 		return li
 		
 	def ation_words(self,aw):
@@ -186,7 +215,7 @@ class Sift:
 		for char in ts:					#remove punctuation
 			if char in puncts:
 				ts = ts.replace(char,"")
-		g_replace = [("\n"," "),("\xa0"," ")]
+		g_replace = [("\n"," "),("\xa0"," "),("\t","")]
 		for c,r in g_replace:
 			ts = ts.replace(c,r)
 		li = list(ts.split(" "))
