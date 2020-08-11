@@ -21,10 +21,9 @@ rss_urls = [r"http://rss.slashdot.org/Slashdot/slashdotMain",	#Slashdot
 			#r"https://rss.app/feeds/1Pqsw7njparMZi7B.xml",  	#wired
 			#r"https://rss.app/feeds/feANofWEfawQKkQr.xml",		#Fast Company
 			r"https://plato.stanford.edu/rss/sep.xml",		    #Philosophy Encyclopedia
-			r"https://www.ted.com/talks/ibram_x_kendi_the_difference_between_being_not_racist_and_antiracist",
-			r"https://www.ted.com/talks/bill_gates_how_the_pandemic_will_shape_the_near_future/",
-			r"https://www.ted.com/talks/matt_walker_how_caffeine_and_alcohol_affect_your_sleep",
-			r"https://www.ted.com/talks/chloe_valdary_how_to_use_love_to_repair_social_inequality"
+			r"http://feeds.feedburner.com/tedtalks_video",		#ted Talk RSS Feed
+			r"",
+			r""
 		  ]
 
 
