@@ -109,25 +109,23 @@ class Sift:
 						self.exec_sift(e,ar)
 				self.sort_entries()
 			
-			elif "https://www.ted.com" in feed_url[:20]:
-				print("........Connecting to TED.com for transcript........")
-				
-				if "/" in feed_url[-1:]:
-					feed_url = feed_url[:-1]
-				if self.link_in_db(feed_url) == False:	
-					trans_link = feed_url + "/transcript"
-					ar = requests.get(trans_link).text
-					if 'Transcript' in ar:
-						ar = self.soup_sandwich(ar)
-						ar = ar[ar.find("Transcript text")+16:ar.find("/Transcript text")]
-						ar = self.wordize(ar)
-						self.exec_sift(feed_url,ar)
-						self.sort_entries()
+			elif "http://feeds.feedburner.com/tedtalks_video" in feed_url:
+				print("........Connecting to TED.com RSS for transcript........")
+				for e,z in self.simple_fp(feed_url):
+					if self.link_in_db(e) == False:
+						chk = requests.get(e + "/transcript")
+						if chk.ok:
+							ar = chk.text
+							ar = self.soup_sandwich(ar)
+							ar = ar[ar.find("Transcript text")+16:ar.find("/Transcript text")]
+							ar = self.wordize(ar)
+							self.exec_sift(e,ar)								
+						else:
+							print("TED talk has no transcript available")
 					else:
-						print("TED talk has no transcript available")
-				else:
-					print("TED talk transcript already in database")
-					
+						print("TED talk transcript already in database")
+				
+				self.sort_entries()	
 					
 			#elif...
 			else:
@@ -343,10 +341,6 @@ class Sift:
 		
 			else:  # First Duplicate
 				self.commit_to_table(f"INSERT INTO {duptb}(word,num) VALUES  (?,?)",(w,2))
-	
-		cur = self.conn.cursor()
-		cur.execute(f"INSERT INTO {table}(word,link_id) VALUES (?,?)",(w,lnk_id))
-		self.conn.commit()
 		self.commit_to_table(f"INSERT INTO {table}(word,link_id) VALUES (?,?)",(w,lnk_id))
 		
 	def word_in_table(self,table,word):
