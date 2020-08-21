@@ -1,6 +1,6 @@
 #! python3
 # ~mikey
-
+#READ
 
 import sqlite3
 from sqlite3 import Error
@@ -14,6 +14,7 @@ class Sift:
 	feed_url = ''
 	conn = None
 	db = None
+	
 ##Table Definitions
 
 	def __init__(self, feed,db):
@@ -43,7 +44,7 @@ class Sift:
 						ar = self.wordize(entry)
 						self.exec_sift(link,ar)
 				self.sort_entries()
-	
+#I	
 	
 			elif 'sciencemag' in feed_url[:30]:
 				print("........Connecting to Science magazine!........")
@@ -82,7 +83,7 @@ class Sift:
 						summary = self.wordize(summary)		
 						self.exec_sift(e,summary)
 				self.sort_entries()
-			
+#S		
 			elif "https://plato.stanford.edu/rss/sep.xml" in feed_url:
 				print("........Connecting to The Stanford Philosophy Encyclopedia........")
 				for e,z in self.simple_req(feed_url,True):
@@ -112,18 +113,17 @@ class Sift:
 			elif "http://feeds.feedburner.com/tedtalks_video" in feed_url:
 				print("........Connecting to TED.com RSS for transcript........")
 				for e,z in self.simple_fp(feed_url):
-					if self.link_in_db(e) == False:
-						chk = requests.get(e + "/transcript")
+					lnk = "https://www.ted.com/talks" + e[e.rfind("/"):] + "/transcript"
+					if self.link_in_db(lnk) == False:
+						chk = requests.get(lnk)
 						if chk.ok:
 							ar = chk.text
 							ar = self.soup_sandwich(ar)
 							ar = ar[ar.find("Transcript text")+16:ar.find("/Transcript text")]
 							ar = self.wordize(ar)
-							self.exec_sift(e,ar)								
-						else:
-							print("TED talk has no transcript available")
+							self.exec_sift(lnk,ar)								
 				self.sort_entries()	
-			
+#H			
 			
 					
 			#elif...
@@ -152,7 +152,7 @@ class Sift:
 					if '-' not in word[:1] and '-' not in word[-1:]:
 						li.append(word)
 		return li
-		
+#M	
 	def ation_words(self,aw):
 		ation_except = []
 		li = []
@@ -190,7 +190,7 @@ class Sift:
 				summ = self.soup_sandwich(summ)
 			il.append((lnk,summ))
 		return il
-		
+#A		
 	def simple_req(self,url,souped = False):
 		il = []
 		for entry in feedparser.parse(url).entries:
@@ -229,7 +229,7 @@ class Sift:
 				output += f'{t} '
 		return output
 		
-		
+#E		
 		
 ##Execute Sift	
 	
@@ -286,7 +286,7 @@ class Sift:
 				for word in entry[5]:
 					self.enter_words("hashtag_words",word,lnk_id)
 		
-
+#L
 	
 	def make_tables(self,conn,*tables):
 		if conn is not None:
@@ -337,8 +337,7 @@ class Sift:
 					t = rows[0]
 					ut = t[0] + 1
 					self.commit_to_table(f"UPDATE {duptb} SET num = ? WHERE word = ?",(ut,w))
-		
-		
+				
 			else:  # First Duplicate
 				self.commit_to_table(f"INSERT INTO {duptb}(word,num) VALUES  (?,?)",(w,2))
 		self.commit_to_table(f"INSERT INTO {table}(word,link_id) VALUES (?,?)",(w,lnk_id))
